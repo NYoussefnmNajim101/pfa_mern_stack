@@ -1,4 +1,4 @@
-import { Send } from '@mui/icons-material';
+import { Cancel, Send } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -9,15 +9,25 @@ import {
   Stepper,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import '../../index.css';
 import { useValue } from '../../context/ContextProvider';
 import AddDetails from './addDetails/AddDetails';
 import AddImages from './addImages/AddImages';
 import AddLocation from './addLocation/AddLocation';
-import { createRoom } from '../../actions/room';
+import { clearRoom, createRoom, updateRoom } from '../../actions/room';
+import { useNavigate } from 'react-router-dom';
 
-const AddRoom = ({ setPage }) => {
+const AddRoom = () => {
   const {
-    state: { images, details, location, currentUser },
+    state: {
+      images,
+      details,
+      location,
+      currentUser,
+      updatedRoom,
+      deletedImages,
+      addedImages,
+    },
     dispatch,
   } = useValue();
   const [activeStep, setActiveStep] = useState(0);
@@ -89,7 +99,26 @@ const AddRoom = ({ setPage }) => {
       description: details.description,
       images,
     };
-    createRoom(room, currentUser, dispatch, setPage);
+    if (updatedRoom)
+      return updateRoom(
+        room,
+        currentUser,
+        dispatch,
+        updatedRoom,
+        deletedImages
+      );
+    createRoom(room, currentUser, dispatch);
+  };
+
+  const navigate = useNavigate();
+  const handleCancel = () => {
+    if (updatedRoom) {
+      navigate('/dashboard/rooms');
+      clearRoom(dispatch, currentUser, addedImages, updatedRoom);
+    } else {
+      dispatch({ type: 'UPDATE_SECTION', payload: 0 });
+      clearRoom(dispatch, currentUser, images);
+    }
   };
   return (
     <Container sx={{ my: 4 }}>
@@ -128,17 +157,29 @@ const AddRoom = ({ setPage }) => {
             Next
           </Button>
         </Stack>
-        {showSubmit && (
-          <Stack sx={{ alignItems: 'center' }}>
+
+        <Stack
+          sx={{ alignItems: 'center', justifyContent: 'center', gap: 2 }}
+          direction="row"
+        >
+          {showSubmit && (
             <Button
               variant="contained"
               endIcon={<Send />}
               onClick={handleSubmit}
             >
-              Submit
+              {updatedRoom ? 'Update' : 'Submit'}
             </Button>
-          </Stack>
-        )}
+          )}
+          <Button
+            variant="outlined"
+            className='bg-red-600'
+            endIcon={<Cancel />}
+            onClick={handleCancel}
+          >
+            Cancel
+          </Button>
+        </Stack>
       </Box>
     </Container>
   );

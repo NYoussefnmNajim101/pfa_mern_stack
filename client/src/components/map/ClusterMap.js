@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useValue } from '../../context/ContextProvider';
 import { getRooms } from '../../actions/room';
-import ReactMapGL, { Marker } from 'react-map-gl';
+import ReactMapGL, { Marker, Popup } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import './cluster.css';
 import { Avatar, Paper, Tooltip } from '@mui/material';
+import GeocoderInput from '../sidebar/GeocoderInput';
+import PopupRoom from './PopupRoom';
 
 const supercluster = new Supercluster({
   radius: 75,
@@ -13,7 +15,7 @@ const supercluster = new Supercluster({
 
 const ClusterMap = () => {
   const {
-    state: { rooms },
+    state: { filteredRooms },
     dispatch,
     mapRef,
   } = useValue();
@@ -21,13 +23,14 @@ const ClusterMap = () => {
   const [clusters, setClusters] = useState([]);
   const [bounds, setBounds] = useState([-180, -85, 180, 85]);
   const [zoom, setZoom] = useState(0);
+  const [popupInfo, setPopupInfo] = useState(null);
 
   useEffect(() => {
     getRooms(dispatch);
   }, []);
 
   useEffect(() => {
-    const points = rooms.map((room) => ({
+    const points = filteredRooms.map((room) => ({
       type: 'Feature',
       properties: {
         cluster: false,
@@ -47,7 +50,7 @@ const ClusterMap = () => {
       },
     }));
     setPoints(points);
-  }, [rooms]);
+  }, [filteredRooms]);
 
   useEffect(() => {
     supercluster.load(points);
@@ -112,11 +115,25 @@ const ClusterMap = () => {
                 src={cluster.properties.uPhoto}
                 component={Paper}
                 elevation={2}
+                onClick={() => setPopupInfo(cluster.properties)}
               />
             </Tooltip>
           </Marker>
         );
       })}
+      <GeocoderInput />
+      {popupInfo && (
+        <Popup
+          longitude={popupInfo.lng}
+          latitude={popupInfo.lat}
+          maxWidth="auto"
+          closeOnClick={false}
+          focusAfterOpen={false}
+          onClose={() => setPopupInfo(null)}
+        >
+          <PopupRoom {...{ popupInfo }} />
+        </Popup>
+      )}
     </ReactMapGL>
   );
 };
